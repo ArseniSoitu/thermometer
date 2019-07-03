@@ -8,6 +8,6 @@
 #ifndef SRC_SSD1306_H_
 #define SRC_SSD1306_H_
 
-
+void initDisplay(void);
 
 #endif /* SRC_SSD1306_H_ */
