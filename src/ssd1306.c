@@ -2,7 +2,7 @@
 #include "I2c.h"
 
 static const uint8_t addr = 0x3C;
-//uint8_t addr = 0x3D;
+//static const uint8_t addr = 0x3D;
 
 static const uint8_t CommandTransmit = 0x00;
 static const uint8_t DataTransmit = 0x40;
@@ -16,7 +16,7 @@ static const uint8_t inverseDisplay = 0xA7;
 static const uint8_t displayOff = 0xAE;
 static const uint8_t displayOn = 0xAF;
 
-static uint8_t pageBuffer[128];
+static uint8_t pageBuffer[129];
 
 static void setContrast(uint8_t contrast)
 {
@@ -54,9 +54,8 @@ static void sendCommand(uint8_t data)
 
 static void sendDataBuffer(uint8_t *inBuf, uint8_t len)
 {
-	uint8_t control = DataTransmit;
-    uint8_t *buf[] = {&control, inBuf};
-    sendBuffer(addr, buf, len + 1);
+    *inBuf = DataTransmit;
+    sendBuffer(addr, inBuf, len);
 }
 
 void initDisplay(void)
@@ -64,10 +63,10 @@ void initDisplay(void)
     sendCommand(0xAE); //display off
     sendCommand(0x20); //Set Memory Addressing Mode
     sendCommand(0x02); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
-	sendCommand(0xB0); //Set Page Start Address for Page Addressing Mode,0-7
+    sendCommand(0xB3); //Set Page Start Address for Page Addressing Mode,0-7
     sendCommand(0xC0); //Set COM Output Scan Direction
-    sendCommand(0x0F); //---Set Lower nibble Column Start Address for Page addressing mode
-    sendCommand(0x13); //---Set Higher nibble Column Start Address for Page addressing mode
+    sendCommand(0x00); //---Set Lower nibble Column Start Address for Page addressing mode
+    sendCommand(0x10); //---Set Higher nibble Column Start Address for Page addressing mode
     sendCommand(0x40); //--set start line address
     sendCommand(0x81); //--set contrast control register
     sendCommand(0x7F);
@@ -86,12 +85,16 @@ void initDisplay(void)
     sendCommand(0x12);
     sendCommand(0xDB); //--set vcomh
     sendCommand(0x20); 
-//    sendCommand(0x8D); //--set DC-DC enable
-//    sendCommand(0x14);
+    sendCommand(0x8D); //--set DC-DC enable
+    sendCommand(0x14);
     sendCommand(0xAF); //--turn on SSD1306 panel
 
-	for (uint8_t i=63; i < 128; i++) {
-		pageBuffer[i] = 0xFF;
+    for (uint8_t i=1; i < 129; i++) {
+        pageBuffer[i] = 0xFF;
 	}
-	sendDataBuffer(pageBuffer, 65);
+
+    for (uint8_t i = 0xB0; i < 0xB8; i++) {
+        sendCommand(i);
+        sendDataBuffer(pageBuffer, 129);
+    }
 }
