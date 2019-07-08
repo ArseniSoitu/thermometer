@@ -1,5 +1,7 @@
 #include "ssd1306.h"
 #include "I2c.h"
+#include "font.h"
+#include "localTime.h"
 
 static const uint8_t addr = 0x3C;
 //static const uint8_t addr = 0x3D;
@@ -17,6 +19,9 @@ static const uint8_t displayOff = 0xAE;
 static const uint8_t displayOn = 0xAF;
 
 static uint8_t pageBuffer[129];
+
+static void drawSymbol(const uint8_t *aSymPtr);
+static void drawColumn(const uint8_t *aColPtr);
 
 static void setContrast(uint8_t contrast)
 {
@@ -58,15 +63,81 @@ static void sendDataBuffer(uint8_t *inBuf, uint8_t len)
     sendBuffer(addr, inBuf, len);
 }
 
+static void drawSymbol(const uint8_t *aSymPtr)
+{
+    uint8_t cnt = 27;
+
+    while (cnt --) {
+        drawColumn(aSymPtr + 4 * cnt);
+    }
+}
+
+static void drawColumn(const uint8_t *aColPtr)
+{
+    const uint8_t *colPtr = aColPtr;
+    uint8_t col = 0;
+    uint8_t colBuf[2];
+
+    for (uint8_t i = 0; i < 4; i++) {
+        col = (uint8_t)(col | ((*colPtr) & 0x01));
+        col = (uint8_t)(col | (((*colPtr >> 1) & 0x01) << 2));
+        col = (uint8_t)(col | (((*colPtr >> 2) & 0x01) << 4));
+        col = (uint8_t)(col | (((*colPtr >> 3) & 0x01) << 6));
+        colBuf[1] = col;
+        sendDataBuffer(colBuf, 2);
+        col = 0;
+
+        col = (uint8_t)(col | ((*colPtr >> 4) & 0x01));
+        col = (uint8_t)(col | (((*colPtr >> 5) & 0x01) << 2));
+        col = (uint8_t)(col | (((*colPtr >> 6) & 0x01) << 4));
+        col = (uint8_t)(col | (((*colPtr >> 7) & 0x01) << 6));
+        colBuf[1] = col;
+        sendDataBuffer(colBuf, 2);
+        col = 0;
+
+        colPtr++;
+    }
+}
+
+static void clearScreen()
+{
+    sendCommand(0x21); //Set column address for vertical mode
+    sendCommand(0x00); //Set start column for vertical mode
+    sendCommand(0x7F); //Set end column for vertical mode
+
+    for (uint32_t i = 0; i < 8 * 128; i ++) {
+        uint8_t buf[] = {0, 0};
+        sendDataBuffer(buf, 2);
+    }
+}
+
+static void clearSymbol()
+{
+    sendCommand(0x22); //Set page address for vertical mode
+    sendCommand(0x00); //Set start page for vertical mode
+    sendCommand(0x07); //Set end page for vertical mode
+
+    for (uint32_t i = 0; i < 8 * 28; i ++) {
+        uint8_t buf[] = {0, 0};
+        sendDataBuffer(buf, 2);
+    }
+}
+
 void initDisplay(void)
 {
     sendCommand(0xAE); //display off
     sendCommand(0x20); //Set Memory Addressing Mode
-    sendCommand(0x02); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
-    sendCommand(0xB3); //Set Page Start Address for Page Addressing Mode,0-7
+    sendCommand(0x01); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
+
+    sendCommand(0x22); //Set page address for vertical mode
+    sendCommand(0x00); //Set start page for vertical mode
+    sendCommand(0x07); //Set end page for vertical mode
+
+    sendCommand(0x21); //Set column address for vertical mode
+    sendCommand(0x1C); //Set start column for vertical mode
+    sendCommand(0x3C); //Set end column for vertical mode
+
     sendCommand(0xC0); //Set COM Output Scan Direction
-    sendCommand(0x00); //---Set Lower nibble Column Start Address for Page addressing mode
-    sendCommand(0x10); //---Set Higher nibble Column Start Address for Page addressing mode
     sendCommand(0x40); //--set start line address
     sendCommand(0x81); //--set contrast control register
     sendCommand(0x7F);
@@ -89,12 +160,41 @@ void initDisplay(void)
     sendCommand(0x14);
     sendCommand(0xAF); //--turn on SSD1306 panel
 
-    for (uint8_t i=1; i < 129; i++) {
-        pageBuffer[i] = 0xFF;
-	}
+    clearScreen();
 
-    for (uint8_t i = 0xB0; i < 0xB8; i++) {
-        sendCommand(i);
-        sendDataBuffer(pageBuffer, 129);
+    sendCommand(0x22); //Set page address for vertical mode
+    sendCommand(0x00); //Set start page for vertical mode
+    sendCommand(0x07); //Set end page for vertical mode
+
+    sendCommand(0x21); //Set column address for vertical mode
+    sendCommand(0x1C); //Set start column for vertical mode
+    sendCommand(0x3C); //Set end column for vertical mode
+
+    drawSymbol(getSymbol(0x34));
+
+    uint8_t code = 0x30;
+
+    while (1) {
+        sendCommand(0x22); //Set page address for vertical mode
+        sendCommand(0x00); //Set start page for vertical mode
+        sendCommand(0x07); //Set end page for vertical mode
+
+        sendCommand(0x21); //Set column address for vertical mode
+        sendCommand(0x3D); //Set start column for vertical mode
+        sendCommand(0x58); //Set end column for vertical mode
+
+        drawSymbol(getSymbol(0x34));
+        delayMs(5000);
+
+        sendCommand(0x21); //Set column address for vertical mode
+        sendCommand(0x3D); //Set start column for vertical mode
+        sendCommand(0x58); //Set end column for vertical mode
+
+        clearSymbol();
+        ++code;
+        if (code == 0x3A)
+            code = 0x30;
     }
+
+
 }

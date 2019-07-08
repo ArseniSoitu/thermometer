@@ -3,6 +3,7 @@
 #include <libopencm3/stm32/i2c.h>
 #include "I2c.h"
 #include "ssd1306.h"
+#include "localTime.h"
 
 void rccSetup(void);
 void gpioSetup(void);
@@ -11,8 +12,9 @@ int main()
 {
 	I2c i2cPeriph;
     rccSetup();
+    systickSetup();
     gpioSetup();
-    i2cInit(&i2cPeriph, I2C1, I2c_CLK_FREQ_48_MHz, I2c_DATA_FREQ_100_kHz);
+    i2cInit(&i2cPeriph, I2C1, I2c_CLK_FREQ_48_MHz, I2c_DATA_FREQ_400_kHz);
     initDisplay();
 
     while (1) {
