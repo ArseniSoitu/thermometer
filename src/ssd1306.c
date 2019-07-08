@@ -3,53 +3,21 @@
 #include "font.h"
 #include "localTime.h"
 
+#define CMD_MEM_MODE 0x20
+#define CMD_HOR_VER_CMNS 0x21
+#define CMD_HOR_VER_PAGES 0x22
+#define CMD_CNTRST 0x81
+
+enum MemoryMode {
+	Horizontal = 0x00,
+	Vertical = 0x01,
+	Page = 0x02
+};
+
 static const uint8_t addr = 0x3C;
 //static const uint8_t addr = 0x3D;
-
 static const uint8_t CommandTransmit = 0x00;
 static const uint8_t DataTransmit = 0x40;
-
-static const uint8_t followRamContent = 0xA4;
-static const uint8_t ignoreRamContent = 0xA5;
-
-static const uint8_t normalDisplay = 0xA6;
-static const uint8_t inverseDisplay = 0xA7;
-
-static const uint8_t displayOff = 0xAE;
-static const uint8_t displayOn = 0xAF;
-
-static uint8_t pageBuffer[129];
-
-static void drawSymbol(const uint8_t *aSymPtr);
-static void drawColumn(const uint8_t *aColPtr);
-
-static void setContrast(uint8_t contrast)
-{
-	uint8_t buf[] = {CommandTransmit, contrast};
-
-	sendBuffer(addr, buf, sizeof(buf) / sizeof(buf[0]));
-}
-
-static void entDispOn(uint8_t ramContent)
-{
-	uint8_t buf[] = {CommandTransmit, ramContent};
-
-	sendBuffer(addr, buf, sizeof(buf) / sizeof(buf[0]));
-}
-
-static void normalInverseDisp(uint8_t normInvDisp)
-{
-	uint8_t buf[] = {CommandTransmit, normInvDisp};
-
-	sendBuffer(addr, buf, sizeof(buf) / sizeof(buf[0]));
-}
-
-static void displayOnOff(uint8_t onOff)
-{
-	uint8_t buf[] = {CommandTransmit, onOff};
-
-	sendBuffer(addr, buf, sizeof(buf) / sizeof(buf[0]));
-}
 
 static void sendCommand(uint8_t data)
 {
@@ -123,21 +91,41 @@ static void clearSymbol()
     }
 }
 
-void initDisplay(void)
+static void setMemoryMode(enum MemoryMode memMode)
 {
-    sendCommand(0xAE); //display off
-    sendCommand(0x20); //Set Memory Addressing Mode
-    sendCommand(0x01); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode (RESET);11,Invalid
+	sendCommand(CMD_MEM_MODE);
+	sendCommand(memMode);
+}
 
-    sendCommand(0x22); //Set page address for vertical mode
-    sendCommand(0x00); //Set start page for vertical mode
-    sendCommand(0x07); //Set end page for vertical mode
+static void pageStart(uint8_t page)
+{
+	sendCommand(start & 0x07 | 0xB0);
+}
 
-    sendCommand(0x21); //Set column address for vertical mode
-    sendCommand(0x1C); //Set start column for vertical mode
-    sendCommand(0x3C); //Set end column for vertical mode
+static void pageStartColumn(uint8_t col)
+{
+	sendCommand(col & 0x0F);
+	sendCommand(col >> 4 & 0x0F | 0x10);
+}
 
-    sendCommand(0xC0); //Set COM Output Scan Direction
+static void horVerColums(uint8_t start, uint8_t end)
+{
+	sendCommand(CMD_HOR_VER_CMNS);
+	sendCommand(start);
+	sendCommand(end);
+}
+
+static void horVerPages(uint8_t start, uint8_t end)
+{
+	sendCommand(CMD_HOR_VER_PAGES);
+	sendCommand(start);
+	sendCommand(end);
+}
+
+
+static void stuffInit()
+{
+	sendCommand(0xC0); //Set COM Output Scan Direction
     sendCommand(0x40); //--set start line address
     sendCommand(0x81); //--set contrast control register
     sendCommand(0x7F);
@@ -149,52 +137,31 @@ void initDisplay(void)
     sendCommand(0xD3); //-set display offset
     sendCommand(0x00);
     sendCommand(0xD5); //--set display clock divide ratio/oscillator frequency
-    sendCommand(0xF0); 
+    sendCommand(0xF0);
     sendCommand(0xD9); //--set pre-charge period
     sendCommand(0x22); //
     sendCommand(0xDA); //--set com pins hardware configuration
     sendCommand(0x12);
     sendCommand(0xDB); //--set vcomh
-    sendCommand(0x20); 
+    sendCommand(0x20);
     sendCommand(0x8D); //--set DC-DC enable
     sendCommand(0x14);
-    sendCommand(0xAF); //--turn on SSD1306 panel
+}
 
-    clearScreen();
+static void setContrast(uint8_t contrast)
+{
+	sendCommand(CMD_CNTRST);
+	sendCommand(contrast);
+}
 
-    sendCommand(0x22); //Set page address for vertical mode
-    sendCommand(0x00); //Set start page for vertical mode
-    sendCommand(0x07); //Set end page for vertical mode
-
-    sendCommand(0x21); //Set column address for vertical mode
-    sendCommand(0x1C); //Set start column for vertical mode
-    sendCommand(0x3C); //Set end column for vertical mode
+void initDisplay(void)
+{
+    sendCommand(0xAE); //display off
+	setMemoryMode(Vertical);
+	horVerPages(0x00, 0x07);
+	horVerColums(0x00, 0x7F);
+	stuffInit();
+    sendCommand(0xAF); //--display on
 
     drawSymbol(getSymbol(0x34));
-
-    uint8_t code = 0x30;
-
-    while (1) {
-        sendCommand(0x22); //Set page address for vertical mode
-        sendCommand(0x00); //Set start page for vertical mode
-        sendCommand(0x07); //Set end page for vertical mode
-
-        sendCommand(0x21); //Set column address for vertical mode
-        sendCommand(0x3D); //Set start column for vertical mode
-        sendCommand(0x58); //Set end column for vertical mode
-
-        drawSymbol(getSymbol(0x34));
-        delayMs(5000);
-
-        sendCommand(0x21); //Set column address for vertical mode
-        sendCommand(0x3D); //Set start column for vertical mode
-        sendCommand(0x58); //Set end column for vertical mode
-
-        clearSymbol();
-        ++code;
-        if (code == 0x3A)
-            code = 0x30;
-    }
-
-
 }
