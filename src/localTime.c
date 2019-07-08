@@ -14,11 +14,11 @@ void sys_tick_handler(void)
 void systickMsSetup()
 {
     systick_counter_disable();
-    systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV_8); //STK_CSR_CLKSOURCE_AHB
+    systick_set_clocksource(STK_CSR_CLKSOURCE_AHB); //STK_CSR_CLKSOURCE_AHB
     STK_CVR = 0;
 	time = 0;
 
-    systick_set_reload(rcc_ahb_frequency / 8 / 1000);
+    systick_set_reload(rcc_ahb_frequency / 1000);
     systick_counter_enable();
     systick_interrupt_enable();
 }

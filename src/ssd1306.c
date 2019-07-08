@@ -8,16 +8,19 @@
 #define CMD_HOR_VER_PAGES 0x22
 #define CMD_CNTRST 0x81
 
-enum MemoryMode {
+typedef enum MemoryMode {
 	Horizontal = 0x00,
 	Vertical = 0x01,
 	Page = 0x02
-};
+} MemoryMode;
+
+static MemoryMode memoryMode;
 
 static const uint8_t addr = 0x3C;
 //static const uint8_t addr = 0x3D;
 static const uint8_t CommandTransmit = 0x00;
 static const uint8_t DataTransmit = 0x40;
+
 
 static void sendCommand(uint8_t data)
 {
@@ -29,15 +32,6 @@ static void sendDataBuffer(uint8_t *inBuf, uint8_t len)
 {
     *inBuf = DataTransmit;
     sendBuffer(addr, inBuf, len);
-}
-
-static void drawSymbol(const uint8_t *aSymPtr)
-{
-    uint8_t cnt = 27;
-
-    while (cnt --) {
-        drawColumn(aSymPtr + 4 * cnt);
-    }
 }
 
 static void drawColumn(const uint8_t *aColPtr)
@@ -67,6 +61,16 @@ static void drawColumn(const uint8_t *aColPtr)
     }
 }
 
+static void drawSymbol(const uint8_t *aSymPtr)
+{
+    uint8_t cnt = 27;
+
+    while (cnt --) {
+        drawColumn(aSymPtr + 4 * cnt);
+    }
+}
+
+
 static void clearScreen()
 {
     sendCommand(0x21); //Set column address for vertical mode
@@ -95,17 +99,18 @@ static void setMemoryMode(enum MemoryMode memMode)
 {
 	sendCommand(CMD_MEM_MODE);
 	sendCommand(memMode);
+	memoryMode = memMode;
 }
 
 static void pageStart(uint8_t page)
 {
-	sendCommand(start & 0x07 | 0xB0);
+	sendCommand((uint8_t)((page & 0x07) | 0xB0));
 }
 
 static void pageStartColumn(uint8_t col)
 {
 	sendCommand(col & 0x0F);
-	sendCommand(col >> 4 & 0x0F | 0x10);
+	sendCommand((uint8_t)((col >> 4 & 0x0F) | 0x10));
 }
 
 static void horVerColums(uint8_t start, uint8_t end)
