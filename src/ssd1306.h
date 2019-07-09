@@ -8,6 +8,8 @@
 #ifndef SRC_SSD1306_H_
 #define SRC_SSD1306_H_
 
-void initDisplay(void);
+#include <inttypes.h>
+
+void initDisplay(uint8_t pages, uint8_t columns);
 
 #endif /* SRC_SSD1306_H_ */

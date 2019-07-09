@@ -1,4 +1,4 @@
 #include <inttypes.h>
 
-void systickSetup();
+void systickMsSetup();
 void delayMs(uint32_t ms);

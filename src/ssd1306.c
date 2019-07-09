@@ -136,7 +136,7 @@ static void stuffInit()
     sendCommand(0x7F);
     sendCommand(0xA1); //--set segment re-map 0 to 127
     sendCommand(0xA6); //--set normal display
-    sendCommand(0xA8); //--set multiplex ratio(1 to 64)
+    sendCommand(0x1F); //--set multiplex ratio(1 to 64)
     sendCommand(0x3F);
     sendCommand(0xA4); //0xa4,Output follows RAM content;0xa5,Output ignores RAM content
     sendCommand(0xD3); //-set display offset
@@ -159,14 +159,18 @@ static void setContrast(uint8_t contrast)
 	sendCommand(contrast);
 }
 
-void initDisplay(void)
+void initDisplay(uint8_t pages, uint8_t columns)
 {
     sendCommand(0xAE); //display off
 	setMemoryMode(Vertical);
-	horVerPages(0x00, 0x07);
-	horVerColums(0x00, 0x7F);
+	horVerPages(0x00, pages);
+	horVerColums(0x00, columns);
 	stuffInit();
     sendCommand(0xAF); //--display on
 
-    drawSymbol(getSymbol(0x34));
+//   drawSymbol(getSymbol(0x34));
+	uint8_t buffer[] = {0x00, 0xFF};
+	sendDataBuffer(buffer, sizeof(buffer) / sizeof(buffer[0]));
+	sendDataBuffer(buffer, sizeof(buffer) / sizeof(buffer[0]));
+	sendDataBuffer(buffer, sizeof(buffer) / sizeof(buffer[0]));
 }

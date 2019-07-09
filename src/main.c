@@ -15,7 +15,7 @@ int main()
     systickMsSetup();
     gpioSetup();
     i2cInit(&i2cPeriph, I2C1, I2c_CLK_FREQ_48_MHz, I2c_DATA_FREQ_400_kHz);
-    initDisplay();
+    initDisplay(0x07, 0x7F);
 
     while (1) {
     }
