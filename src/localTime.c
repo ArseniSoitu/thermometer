@@ -1,13 +1,22 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
+#include "SEGGER_RTT_Conf.h"
+#include "SEGGER_RTT.h"
 #include "localTime.h"
+#include "stdio.h"
 
 static uint64_t time;
+static char buffer[100];
 
 void sys_tick_handler(void)
 {
     ++time;
+//    if ((time % 1000) == 0) {
+//        SEGGER_RTT_printf(0, "Time: %d\n", time);
+        sprintf(buffer, "Time: %d\n", (int)time);
+        SEGGER_RTT_WriteString(0, buffer);
+  //  }
 }
 
 

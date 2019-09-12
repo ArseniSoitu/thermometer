@@ -48,6 +48,9 @@ ExternalProject_Add(libopencm3
 include_directories(src)
 file(GLOB_RECURSE CORE_SOURCE_LIST "${PROJECT_SOURCE_DIR}/src/*.c")
 
+include_directories(RTT)
+file(GLOB_RECURSE RTT_SOURCE_LIST "${PROJECT_SOURCE_DIR}/RTT/*.c")
+
 include_directories(SYSTEM "${PROJECT_SOURCE_DIR}/libopencm3/include")
 link_directories("${PROJECT_SOURCE_DIR}/libopencm3/lib")
 
@@ -55,7 +58,7 @@ set(LINKER_SCRIPT "${PROJECT_SOURCE_DIR}/libopencm3/lib/stm32/f0/stm32f07xz8.ld"
 set(FLAGS_LINKER ${FLAGS_LINKER} opencm3_stm32f0)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --specs=nosys.specs --specs=nano.specs -Xlinker --gc-sections -T ${LINKER_SCRIPT} -Xlinker -Map=${PROJECT_NAME}.map")
 
-add_executable(${PROJECT_NAME} ${CORE_SOURCE_LIST})
+add_executable(${PROJECT_NAME} ${CORE_SOURCE_LIST} ${RTT_SOURCE_LIST})
 add_dependencies(${PROJECT_NAME} libopencm3)
 target_link_libraries(${PROJECT_NAME} ${FLAGS_LINKER})
 
